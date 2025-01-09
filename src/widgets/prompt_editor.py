@@ -64,35 +64,49 @@ class PromptEditor(QWidget):
         prompts = normalized_text.split(', ')
         self.prompt_list.clear()
         
+        # 收集需要翻译的中文提示词
+        chinese_prompts = []
+        other_prompts = []
+        
         for prompt in prompts:
             if not prompt:
                 continue
             
             # 检查是否包含中文字符
             has_chinese = any('\u4e00' <= char <= '\u9fff' for char in prompt)
-            
             if has_chinese:
-                try:
-                    # 使用DraggableTreeWidget中的translator实例
-                    translator = self.prompt_list.translator
-                    # 临时修改翻译方向
-                    translator.source = 'zh-CN'
-                    translator.target = 'en'
-                    # 将中文翻译为英文
-                    english = translator.translate(prompt)
-                    # 恢复翻译方向
-                    translator.source = 'en'
-                    translator.target = 'zh-CN'
-                    # 创建树形项：英文提示词和中文原文
-                    item = QTreeWidgetItem([english.strip(), prompt])
-                except Exception as e:
-                    # 如果翻译失败，保持原文
-                    QMessageBox.warning(self, "翻译错误", f"翻译失败: {str(e)}")
-                    item = QTreeWidgetItem([prompt, ""])
+                chinese_prompts.append(prompt)
             else:
-                # 非中文提示词，保持原样
-                item = QTreeWidgetItem([prompt, ""])
-            
+                other_prompts.append((prompt, ""))
+        
+        # 批量翻译中文提示词
+        if chinese_prompts:
+            try:
+                translator = self.prompt_list.translator
+                translator.source = 'zh-CN'
+                translator.target = 'en'
+                
+                # 合并翻译以减少请求次数
+                combined_text = "\n".join(chinese_prompts)
+                english_translations = translator.translate(combined_text).split("\n")
+                
+                # 恢复翻译方向
+                translator.source = 'en'
+                translator.target = 'zh-CN'
+                
+                # 将翻译结果与原文配对
+                for cn_text, en_text in zip(chinese_prompts, english_translations):
+                    other_prompts.append((en_text.strip(), cn_text))
+                    
+            except Exception as e:
+                QMessageBox.warning(self, "翻译错误", f"翻译失败: {str(e)}")
+                # 翻译失败时使用原文
+                for prompt in chinese_prompts:
+                    other_prompts.append((prompt, ""))
+        
+        # 添加所有提示词到列表
+        for prompt, translation in other_prompts:
+            item = QTreeWidgetItem([prompt, translation])
             self.prompt_list.addTopLevelItem(item)
         
         # 更新输入框内容为规范化的英文提示词
