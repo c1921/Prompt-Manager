@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QPushButton
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QPushButton, QMenu, QInputDialog
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor
 
@@ -9,6 +9,12 @@ class DraggableListWidget(QListWidget):
         self.dragged_item = None  # 添加跟踪变量
         self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.model().rowsMoved.connect(self.update_text)
+        
+        # 启用双击编辑
+        self.itemDoubleClicked.connect(self.edit_prompt)
+        # 启用右键菜单
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_context_menu)
 
     def add_prompt(self, prompt):
         item = QListWidgetItem(prompt)
@@ -30,6 +36,40 @@ class DraggableListWidget(QListWidget):
             self.setCurrentItem(self.dragged_item)
             self.dragged_item = None  # 重置跟踪变量
         self.itemSelectionChanged.emit()
+
+    def edit_prompt(self, item=None):
+        """编辑提示词"""
+        if not item:
+            item = self.currentItem()
+        if not item:
+            return
+            
+        text, ok = QInputDialog.getText(
+            self,
+            "编辑提示词",
+            "请输入新的提示词：",
+            text=item.text()
+        )
+        
+        if ok and text:
+            item.setText(text)
+            # 通知父窗口更新文本编辑框
+            prompt_editor = self.parent()
+            if prompt_editor:
+                prompt_editor.update_input_field()
+    
+    def show_context_menu(self, position):
+        """显示右键菜单"""
+        item = self.itemAt(position)
+        if not item:
+            return
+            
+        menu = QMenu()
+        edit_action = menu.addAction("编辑提示词")
+        action = menu.exec(self.mapToGlobal(position))
+        
+        if action == edit_action:
+            self.edit_prompt(item)
 
 class PromptEditor(QWidget):
     def __init__(self):
@@ -99,9 +139,10 @@ class PromptEditor(QWidget):
         self.prompt_list.addItems(prompts)
 
     def update_input_field(self):
-        # 获取当前列表中的所有提示词
-        prompts = [self.prompt_list.item(i).text() for i in range(self.prompt_list.count())]
-        # 更新输入框中的文本
+        """更新文本编辑框内容"""
+        prompts = []
+        for i in range(self.prompt_list.count()):
+            prompts.append(self.prompt_list.item(i).text())
         self.input_field.setPlainText(', '.join(prompts))
 
     def highlight_selected_text(self):
@@ -148,6 +189,13 @@ class PromptEditor(QWidget):
             self.prompt_list.setCurrentItem(moved_item)
             # 触发高亮
             self.highlight_selected_text()
+
+    def update_text_area(self):
+        """更新文本编辑框内容"""
+        prompts = []
+        for i in range(self.prompt_list.count()):
+            prompts.append(self.prompt_list.item(i).text())
+        self.text_area.setPlainText(', '.join(prompts))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
