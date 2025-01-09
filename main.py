@@ -1,58 +1,106 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QPushButton, QMenu, QInputDialog
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QTextEdit, QPushButton, QMenu, QInputDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QDialog, QLabel, QLineEdit, QDialogButtonBox, QAbstractItemView
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor
 
-class DraggableListWidget(QListWidget):
+class PromptTranslationDialog(QDialog):
+    """提示词编辑对话框"""
+    def __init__(self, prompt="", translation="", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("编辑提示词")
+        
+        layout = QVBoxLayout(self)
+        
+        # 英文提示词输入
+        layout.addWidget(QLabel("提示词:"))
+        self.prompt_edit = QLineEdit(prompt)
+        layout.addWidget(self.prompt_edit)
+        
+        # 中文翻译输入
+        layout.addWidget(QLabel("中文翻译:"))
+        self.translation_edit = QLineEdit(translation)
+        layout.addWidget(self.translation_edit)
+        
+        # 确定取消按钮
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | 
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+class DraggableTreeWidget(QTreeWidget):
     def __init__(self):
         super().__init__()
-        self.dragged_item = None  # 添加跟踪变量
-        self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
-        self.model().rowsMoved.connect(self.update_text)
+        self.dragged_item = None
         
-        # 启用双击编辑
+        # 设置列头
+        self.setHeaderLabels(["提示词", "中文翻译"])
+        self.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        
+        # 设置拖放模式
+        self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        
+        # 禁止展开/折叠和子项
+        self.setExpandsOnDoubleClick(False)
+        self.setRootIsDecorated(False)
+        self.setIndentation(0)  # 设置缩进为0，防止显示层级
+        
+        # 启用双击和右键菜单编辑
         self.itemDoubleClicked.connect(self.edit_prompt)
-        # 启用右键菜单
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
-
-    def add_prompt(self, prompt):
-        item = QListWidgetItem(prompt)
-        self.addItem(item)
-
-    def update_text(self):
-        # Emit a custom signal or directly update the text
-        self.parent().update_input_field()
-
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        # 记录开始拖动时选中的项
-        self.dragged_item = self.currentItem()
-
+    
     def dropEvent(self, event):
-        super().dropEvent(event)
-        # 拖放完成后，重新选中之前拖动的项
-        if self.dragged_item:
-            self.setCurrentItem(self.dragged_item)
-            self.dragged_item = None  # 重置跟踪变量
-        self.itemSelectionChanged.emit()
-
-    def edit_prompt(self, item=None):
-        """编辑提示词"""
+        """重写拖放事件，只允许改变顺序"""
+        if event.source() != self:
+            event.ignore()
+            return
+            
+        # 获取拖放的目标位置
+        drop_pos = event.position().toPoint()
+        target_item = self.itemAt(drop_pos)
+        
+        if not target_item:
+            # 如果拖到空白处，添加到末尾
+            super().dropEvent(event)
+        else:
+            # 获取目标项的索引
+            target_index = self.indexOfTopLevelItem(target_item)
+            # 获取当前拖动的项
+            current_item = self.currentItem()
+            if current_item:
+                # 移除当前项
+                current_index = self.indexOfTopLevelItem(current_item)
+                taken_item = self.takeTopLevelItem(current_index)
+                # 在目标位置插入
+                self.insertTopLevelItem(target_index, taken_item)
+                # 保持选中状态
+                self.setCurrentItem(taken_item)
+        
+        # 通知父窗口更新文本编辑框
+        prompt_editor = self.parent()
+        if prompt_editor:
+            prompt_editor.update_input_field()
+    
+    def edit_prompt(self, item=None, column=None):
+        """编辑提示词和翻译"""
         if not item:
             item = self.currentItem()
         if not item:
             return
             
-        text, ok = QInputDialog.getText(
-            self,
-            "编辑提示词",
-            "请输入新的提示词：",
-            text=item.text()
+        dialog = PromptTranslationDialog(
+            prompt=item.text(0),
+            translation=item.text(1),
+            parent=self
         )
         
-        if ok and text:
-            item.setText(text)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            item.setText(0, dialog.prompt_edit.text())
+            item.setText(1, dialog.translation_edit.text())
             # 通知父窗口更新文本编辑框
             prompt_editor = self.parent()
             if prompt_editor:
@@ -90,8 +138,8 @@ class PromptEditor(QWidget):
         left_layout.addWidget(self.add_button)
 
         # 右侧可拖动列表
-        self.prompt_list = DraggableListWidget()
-        self.prompt_list.setParent(self)  # Set parent to access update_input_field
+        self.prompt_list = DraggableTreeWidget()
+        self.prompt_list.setParent(self)
 
         main_layout.addLayout(left_layout)
         main_layout.addWidget(self.prompt_list)
@@ -130,19 +178,21 @@ class PromptEditor(QWidget):
         text = self.input_field.toPlainText()
         normalized_text = self.normalize_text(text)
         
-        # 更新文本编辑框的内容为规范化后的文本
         self.input_field.setPlainText(normalized_text)
         
-        # 清空列表并添加规范化后的提示词
         self.prompt_list.clear()
         prompts = normalized_text.split(', ')
-        self.prompt_list.addItems(prompts)
+        for prompt in prompts:
+            # 创建两列的树形项：提示词和空的中文翻译
+            item = QTreeWidgetItem([prompt, ""])
+            self.prompt_list.addTopLevelItem(item)
 
     def update_input_field(self):
         """更新文本编辑框内容"""
         prompts = []
-        for i in range(self.prompt_list.count()):
-            prompts.append(self.prompt_list.item(i).text())
+        for i in range(self.prompt_list.topLevelItemCount()):
+            item = self.prompt_list.topLevelItem(i)
+            prompts.append(item.text(0))  # 只使用英文提示词
         self.input_field.setPlainText(', '.join(prompts))
 
     def highlight_selected_text(self):
@@ -157,8 +207,8 @@ class PromptEditor(QWidget):
             cursor.clearSelection()
             return
             
-        # 获取选中项的文本
-        selected_text = selected_items[0].text()
+        # 获取选中项的文本（第0列是提示词）
+        selected_text = selected_items[0].text(0)  # 添加列号参数
         
         # 在文本编辑框中查找并高亮对应文本
         document = self.input_field.document()
