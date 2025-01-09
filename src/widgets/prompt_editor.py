@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QTreeWidgetItem
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QTreeWidgetItem, QMessageBox
 from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor
 from .draggable_tree import DraggableTreeWidget
 
@@ -60,14 +60,43 @@ class PromptEditor(QWidget):
         text = self.input_field.toPlainText()
         normalized_text = self.normalize_text(text)
         
-        self.input_field.setPlainText(normalized_text)
-        
-        self.prompt_list.clear()
+        # 分割提示词
         prompts = normalized_text.split(', ')
+        self.prompt_list.clear()
+        
         for prompt in prompts:
-            # 创建两列的树形项：提示词和空的中文翻译
-            item = QTreeWidgetItem([prompt, ""])
+            if not prompt:
+                continue
+            
+            # 检查是否包含中文字符
+            has_chinese = any('\u4e00' <= char <= '\u9fff' for char in prompt)
+            
+            if has_chinese:
+                try:
+                    # 使用DraggableTreeWidget中的translator实例
+                    translator = self.prompt_list.translator
+                    # 临时修改翻译方向
+                    translator.source = 'zh-CN'
+                    translator.target = 'en'
+                    # 将中文翻译为英文
+                    english = translator.translate(prompt)
+                    # 恢复翻译方向
+                    translator.source = 'en'
+                    translator.target = 'zh-CN'
+                    # 创建树形项：英文提示词和中文原文
+                    item = QTreeWidgetItem([english.strip(), prompt])
+                except Exception as e:
+                    # 如果翻译失败，保持原文
+                    QMessageBox.warning(self, "翻译错误", f"翻译失败: {str(e)}")
+                    item = QTreeWidgetItem([prompt, ""])
+            else:
+                # 非中文提示词，保持原样
+                item = QTreeWidgetItem([prompt, ""])
+            
             self.prompt_list.addTopLevelItem(item)
+        
+        # 更新输入框内容为规范化的英文提示词
+        self.update_input_field()
 
     def update_input_field(self):
         """更新文本编辑框内容"""
