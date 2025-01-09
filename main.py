@@ -64,16 +64,40 @@ class PromptEditor(QWidget):
         # 添加拖动完成后的信号连接
         self.prompt_list.model().rowsMoved.connect(self.on_rows_moved)
 
+    def normalize_text(self, text):
+        """规范化提示词文本格式
+        将输入文本转换为标准格式：使用英文逗号和单个空格分隔提示词
+        
+        Args:
+            text (str): 输入的原始文本
+            
+        Returns:
+            str: 规范化后的文本，格式如："prompt1, prompt2, prompt3"
+        """
+        # 替换中文逗号为英文逗号
+        text = text.replace('，', ',')
+        
+        # 分割文本，同时处理多个连续逗号的情况
+        parts = [part.strip() for part in text.split(',')]
+        # 过滤掉空字符串
+        parts = [part for part in parts if part]
+        
+        # 使用标准格式重新组合（逗号+空格）
+        return ', '.join(parts)
+    
     def add_prompts(self):
-        # 获取输入框中的文本
+        """添加提示词到列表，在添加前对文本进行规范化处理"""
+        # 获取并规范化文本
         text = self.input_field.toPlainText()
-        # 按逗号分割文本
-        prompts = [prompt.strip() for prompt in text.split(',') if prompt.strip()]
-        # 清空当前列表
+        normalized_text = self.normalize_text(text)
+        
+        # 更新文本编辑框的内容为规范化后的文本
+        self.input_field.setPlainText(normalized_text)
+        
+        # 清空列表并添加规范化后的提示词
         self.prompt_list.clear()
-        # 添加每个提示词到列表
-        for prompt in prompts:
-            self.prompt_list.add_prompt(prompt)
+        prompts = normalized_text.split(', ')
+        self.prompt_list.addItems(prompts)
 
     def update_input_field(self):
         # 获取当前列表中的所有提示词
