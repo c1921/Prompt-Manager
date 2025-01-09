@@ -43,8 +43,8 @@ class PromptEditor(QWidget):
         left_layout = QVBoxLayout()
         self.input_field = QTextEdit()
         self.input_field.setPlaceholderText("输入提示词，用逗号分隔")
-        self.add_button = QPushButton("添加提示词")
-        self.add_button.clicked.connect(self.add_prompts)
+        self.add_button = QPushButton("生成提示词列表")
+        self.add_button.clicked.connect(self.generate_prompt_list)
 
         left_layout.addWidget(self.input_field)
         left_layout.addWidget(self.add_button)
@@ -85,9 +85,8 @@ class PromptEditor(QWidget):
         # 使用标准格式重新组合（逗号+空格）
         return ', '.join(parts)
     
-    def add_prompts(self):
-        """添加提示词到列表，在添加前对文本进行规范化处理"""
-        # 获取并规范化文本
+    def generate_prompt_list(self):
+        """将文本规范化并生成提示词列表"""
         text = self.input_field.toPlainText()
         normalized_text = self.normalize_text(text)
         
