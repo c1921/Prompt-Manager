@@ -20,6 +20,13 @@ class PromptEditor(QWidget):
         left_layout.addWidget(self.input_field)
         left_layout.addWidget(self.add_button)
 
+        # 添加翻译按钮
+        self.translate_button = QPushButton("翻译所有提示词")
+        self.translate_button.clicked.connect(self.translate_all_prompts)
+        
+        # 将翻译按钮添加到左侧布局
+        left_layout.addWidget(self.translate_button)
+
         # 右侧可拖动列表
         self.prompt_list = DraggableTreeWidget()
         self.prompt_list.setParent(self)
@@ -114,3 +121,7 @@ class PromptEditor(QWidget):
             self.prompt_list.setCurrentItem(moved_item)
             # 触发高亮
             self.highlight_selected_text() 
+
+    def translate_all_prompts(self):
+        """触发所有提示词的翻译"""
+        self.prompt_list.translate_all_prompts() 
