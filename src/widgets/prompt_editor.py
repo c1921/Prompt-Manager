@@ -8,7 +8,7 @@ from ..styles.dark_theme import *  # 导入样式
 class PromptEditor(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SD 提示词编辑器")
+        self.setWindowTitle("SD Prompt Manager")
         self.setGeometry(100, 100, 800, 600)
         
         # 设置窗口样式
@@ -26,7 +26,7 @@ class PromptEditor(QWidget):
         title_bar_layout.setContentsMargins(10, 5, 10, 5)
         
         # 标题文本
-        title_label = QLabel("SD 提示词编辑器")
+        title_label = QLabel("SD Prompt Manager")
         title_label.setStyleSheet(TITLE_LABEL)
         
         # 最小化和关闭按钮
