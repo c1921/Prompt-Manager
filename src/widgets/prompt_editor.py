@@ -1,46 +1,124 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QTreeWidgetItem, QMessageBox
-from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, 
+                            QPushButton, QTreeWidgetItem, QMessageBox, QStyle, QLabel)
+from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor, QPalette
+from PyQt6.QtCore import Qt
 from .draggable_tree import DraggableTreeWidget
+from ..styles.dark_theme import *  # 导入样式
 
 class PromptEditor(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SD 提示词编辑器")
-        self.setGeometry(100, 100, 600, 400)
-
+        self.setGeometry(100, 100, 800, 600)
+        
+        # 设置窗口样式
+        self.setStyleSheet(MAIN_WINDOW)
+        self.setObjectName("mainWindow")
+        
+        # 设置窗口标志
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        # 创建自定义标题栏
+        title_bar = QWidget()
+        title_bar.setStyleSheet(TITLE_BAR)
+        title_bar_layout = QHBoxLayout(title_bar)
+        title_bar_layout.setContentsMargins(10, 5, 10, 5)
+        
+        # 标题文本
+        title_label = QLabel("SD 提示词编辑器")
+        title_label.setStyleSheet(TITLE_LABEL)
+        
+        # 最小化和关闭按钮
+        min_button = QPushButton("－")
+        close_button = QPushButton("×")
+        
+        for btn in (min_button, close_button):
+            btn.setFixedSize(30, 30)
+            btn.setStyleSheet(TITLE_BUTTONS)
+        
+        title_bar_layout.addWidget(title_label)
+        title_bar_layout.addStretch()
+        title_bar_layout.addWidget(min_button)
+        title_bar_layout.addWidget(close_button)
+        
+        # 连接按钮信号
+        min_button.clicked.connect(self.showMinimized)
+        close_button.clicked.connect(self.close)
+        
+        # 创建主要内容布局
         main_layout = QHBoxLayout()
-
-        # 左侧多行输入框和按钮
+        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        
+        # 左侧布局
         left_layout = QVBoxLayout()
+        left_layout.setSpacing(10)
+        
         self.input_field = QTextEdit()
         self.input_field.setPlaceholderText("输入提示词，用逗号分隔")
-        self.add_button = QPushButton("生成提示词列表")
-        self.add_button.clicked.connect(self.generate_prompt_list)
-
-        left_layout.addWidget(self.input_field)
-        left_layout.addWidget(self.add_button)
-
-        # 添加翻译按钮
-        self.translate_button = QPushButton("翻译所有提示词")
-        self.translate_button.clicked.connect(self.translate_all_prompts)
+        self.input_field.setMinimumWidth(300)
+        self.input_field.setStyleSheet(TEXT_EDIT)
         
-        # 将翻译按钮添加到左侧布局
-        left_layout.addWidget(self.translate_button)
-
+        # 按钮布局
+        button_layout = QHBoxLayout()
+        self.add_button = QPushButton("生成提示词列表")
+        self.translate_button = QPushButton("翻译所有提示词")
+        
+        for btn in (self.add_button, self.translate_button):
+            btn.setStyleSheet(ACTION_BUTTONS)
+        
+        button_layout.addWidget(self.add_button)
+        button_layout.addWidget(self.translate_button)
+        
+        left_layout.addWidget(self.input_field)
+        left_layout.addLayout(button_layout)
+        
         # 右侧可拖动列表
         self.prompt_list = DraggableTreeWidget()
         self.prompt_list.setParent(self)
-
+        
+        # 连接信号
+        self.add_button.clicked.connect(self.generate_prompt_list)
+        self.translate_button.clicked.connect(self.translate_all_prompts)
+        self.prompt_list.itemSelectionChanged.connect(self.highlight_selected_text)
+        self.prompt_list.model().rowsMoved.connect(self.on_rows_moved)
+        
         main_layout.addLayout(left_layout)
         main_layout.addWidget(self.prompt_list)
+        
+        # 创建内容容器
+        content_widget = QWidget()
+        content_widget.setStyleSheet("background-color: #1e1e1e;")
+        content_widget.setLayout(main_layout)
+        
+        # 主容器布局
+        main_container = QVBoxLayout()
+        main_container.setContentsMargins(0, 0, 0, 0)
+        main_container.setSpacing(0)
+        
+        main_container.addWidget(title_bar)
+        main_container.addWidget(content_widget)
+        
+        self.setLayout(main_container)
+        
+        # 添加窗口拖动支持
+        self._drag_pos = None
+        title_bar.mousePressEvent = self._title_bar_mouse_press
+        title_bar.mouseMoveEvent = self._title_bar_mouse_move
 
-        self.setLayout(main_layout)
+    def _title_bar_mouse_press(self, event):
+        """记录鼠标按下位置"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = event.globalPosition().toPoint()
 
-        # 在初始化时添加列表项选择事件的连接
-        self.prompt_list.itemSelectionChanged.connect(self.highlight_selected_text)
-
-        # 添加拖动完成后的信号连接
-        self.prompt_list.model().rowsMoved.connect(self.on_rows_moved)
+    def _title_bar_mouse_move(self, event):
+        """处理窗口拖动"""
+        if event.buttons() & Qt.MouseButton.LeftButton and self._drag_pos is not None:
+            diff = event.globalPosition().toPoint() - self._drag_pos
+            new_pos = self.pos() + diff
+            self.move(new_pos)
+            self._drag_pos = event.globalPosition().toPoint()
 
     def normalize_text(self, text):
         """规范化提示词文本格式"""
@@ -141,7 +219,8 @@ class PromptEditor(QWidget):
         
         # 创建高亮格式
         highlight_format = QTextCharFormat()
-        highlight_format.setBackground(QColor("yellow"))
+        highlight_format.setBackground(QColor("#2d5a88"))  # 深蓝色
+        highlight_format.setForeground(QColor("#ffffff"))  # 白色
         
         # 清除之前的高亮
         cursor.select(QTextCursor.SelectionType.Document)

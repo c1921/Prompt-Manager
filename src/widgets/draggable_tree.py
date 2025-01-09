@@ -3,15 +3,22 @@ from PyQt6.QtCore import Qt
 from dialogs.prompt_translation_dialog import PromptTranslationDialog
 from deep_translator import GoogleTranslator
 import time
+from ..styles.dark_theme import TREE_WIDGET
 
 class DraggableTreeWidget(QTreeWidget):
     def __init__(self):
         super().__init__()
         self.dragged_item = None
         
+        # 设置样式
+        self.setStyleSheet(TREE_WIDGET)
+        
         # 设置列头
         self.setHeaderLabels(["提示词", "中文翻译"])
         self.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        
+        # 启用交替行颜色
+        self.setAlternatingRowColors(True)
         
         # 设置拖放模式
         self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
