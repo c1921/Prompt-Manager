@@ -37,6 +37,15 @@ class DraggableTreeWidget(QTreeWidget):
         # 添加翻译器实例
         self.translator = GoogleTranslator(source='en', target='zh-CN')
     
+    def _find_prompt_editor(self):
+        """查找 PromptEditor 父窗口"""
+        parent = self.parent()
+        while parent:
+            if hasattr(parent, 'update_input_field'):
+                return parent
+            parent = parent.parent()
+        return None
+    
     def dropEvent(self, event):
         """重写拖放事件，只允许改变顺序"""
         if event.source() != self:
@@ -64,8 +73,8 @@ class DraggableTreeWidget(QTreeWidget):
                 # 保持选中状态
                 self.setCurrentItem(taken_item)
         
-        # 通知父窗口更新文本编辑框
-        prompt_editor = self.parent()
+        # 修改这里：通过遍历父窗口层级找到 PromptEditor 实例
+        prompt_editor = self._find_prompt_editor()
         if prompt_editor:
             prompt_editor.update_input_field()
     
@@ -85,8 +94,7 @@ class DraggableTreeWidget(QTreeWidget):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             item.setText(0, dialog.prompt_edit.text())
             item.setText(1, dialog.translation_edit.text())
-            # 通知父窗口更新文本编辑框
-            prompt_editor = self.parent()
+            prompt_editor = self._find_prompt_editor()
             if prompt_editor:
                 prompt_editor.update_input_field()
     
