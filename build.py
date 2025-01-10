@@ -5,36 +5,27 @@ from src.version import *
 
 def generate_version_info():
     """生成版本信息文件"""
-    version_info = f"""# UTF-8
-VSVersionInfo(
-  ffi=FixedFileInfo(
-    filevers={VERSION + (0,)},
-    prodvers={VERSION + (0,)},
-    mask=0x3f,
-    flags=0x0,
-    OS=0x40004,
-    fileType=0x1,
-    subtype=0x0,
-    date=(0, 0)
-  ),
-  kids=[
-    StringFileInfo(
-      [
-      StringTable(
-        u'080404B0',
-        [StringStruct(u'CompanyName', u'{COMPANY}'),
-        StringStruct(u'FileDescription', u'{DESCRIPTION}'),
-        StringStruct(u'FileVersion', u'{VERSION_STR}'),
-        StringStruct(u'InternalName', u'SDPromptManager'),
-        StringStruct(u'LegalCopyright', u'{COPYRIGHT}'),
-        StringStruct(u'OriginalFilename', u'SDPromptManager.exe'),
-        StringStruct(u'ProductName', u'{APP_NAME}'),
-        StringStruct(u'ProductVersion', u'{VERSION_WITH_META}')])
-      ]), 
-    VarFileInfo([VarStruct(u'Translation', [2052, 1200])])
-  ]
-)
-"""
+    # 添加版本信息日志
+    print(f"当前版本号: {VERSION_STR}")
+    
+    # 读取模板文件
+    with open('version_info.template', 'r', encoding='utf-8') as f:
+        template = Template(f.read())
+    
+    # 准备替换变量
+    version_tuple = VERSION + (0,)  # 添加一个0作为第四个版本号
+    variables = {
+        'VERSION_TUPLE': str(version_tuple),
+        'VERSION_STR': VERSION_STR,
+        'APP_NAME': APP_NAME,
+        'COMPANY': COMPANY,
+        'DESCRIPTION': DESCRIPTION,
+        'COPYRIGHT': COPYRIGHT
+    }
+    
+    # 替换变量生成最终内容
+    version_info = template.substitute(variables)
+    
     # 写入文件
     with open('version_info.txt', 'w', encoding='utf-8') as f:
         f.write(version_info)
