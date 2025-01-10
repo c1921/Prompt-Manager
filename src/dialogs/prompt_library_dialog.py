@@ -1,9 +1,11 @@
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTreeWidget, 
-                          QTreeWidgetItem, QPushButton, QLabel, QHeaderView, QWidget)
+                          QTreeWidgetItem, QPushButton, QLabel, QHeaderView, QWidget, 
+                          QFileDialog, QLineEdit, QDialogButtonBox, QMessageBox)
 from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QIcon
 from ..data.prompt_library import PROMPT_LIBRARY
 from ..styles.dark_theme import *
+import json
 
 class PromptLibraryDialog(QDialog):
     # 添加自定义信号
@@ -197,6 +199,50 @@ class PromptLibraryDialog(QDialog):
         button_layout.addWidget(self.add_button)
         button_layout.addWidget(self.cancel_button)
         
+        # 添加工具栏
+        toolbar_layout = QHBoxLayout()
+        toolbar_layout.setSpacing(10)
+        
+        # 添加工具栏按钮
+        self.import_button = QPushButton("导入")
+        self.export_button = QPushButton("导出")
+        self.add_category_button = QPushButton("添加分类")
+        self.add_prompt_button = QPushButton("添加提示词")
+        self.delete_button = QPushButton("删除")
+        
+        for btn in (self.import_button, self.export_button, 
+                   self.add_category_button, self.add_prompt_button, 
+                   self.delete_button):
+            btn.setMinimumHeight(32)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #333333;
+                    color: white;
+                    border: none;
+                    padding: 4px 12px;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #404040;
+                }
+                QPushButton:pressed {
+                    background-color: #2a2a2a;
+                }
+            """)
+            toolbar_layout.addWidget(btn)
+        
+        toolbar_layout.addStretch()
+        
+        # 连接信号
+        self.import_button.clicked.connect(self._import_library)
+        self.export_button.clicked.connect(self._export_library)
+        self.add_category_button.clicked.connect(self._add_category)
+        self.add_prompt_button.clicked.connect(self._add_prompt)
+        self.delete_button.clicked.connect(self._delete_selected)
+        
+        # 添加工具栏到布局
+        content_layout.insertLayout(0, toolbar_layout)
+        
         # 添加到主布局
         content_layout.addWidget(self.tree)
         content_layout.addLayout(button_layout)
@@ -268,3 +314,143 @@ class PromptLibraryDialog(QDialog):
                 for j in range(category.childCount()):
                     child = category.child(j)
                     child.setCheckState(0, Qt.CheckState.Unchecked) 
+    
+    def _import_library(self):
+        """导入提示词库"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "导入提示词库", "", "JSON Files (*.json)")
+        if file_path:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                # 合并到现有库
+                PROMPT_LIBRARY.merge_library(data)
+                # 重新加载树形控件
+                self.tree.clear()
+                self.load_library()
+                QMessageBox.information(self, "成功", "提示词库导入成功")
+            except Exception as e:
+                QMessageBox.warning(self, "错误", f"导入失败: {str(e)}")
+    
+    def _export_library(self):
+        """导出提示词库"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "导出提示词库", "", "JSON Files (*.json)")
+        if file_path:
+            try:
+                data = PROMPT_LIBRARY.export_library()
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+                QMessageBox.information(self, "成功", "提示词库导出成功")
+            except Exception as e:
+                QMessageBox.warning(self, "错误", f"导出失败: {str(e)}")
+    
+    def _add_category(self):
+        """添加新分类"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("添加分类")
+        dialog.setMinimumWidth(300)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # 添加输入框
+        name_label = QLabel("分类名称:")
+        name_edit = QLineEdit()
+        desc_label = QLabel("描述:")
+        desc_edit = QLineEdit()
+        
+        layout.addWidget(name_label)
+        layout.addWidget(name_edit)
+        layout.addWidget(desc_label)
+        layout.addWidget(desc_edit)
+        
+        # 添加按钮
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | 
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            name = name_edit.text().strip()
+            desc = desc_edit.text().strip()
+            if name:
+                PROMPT_LIBRARY.add_category(name, desc)
+                self.tree.clear()
+                self.load_library()
+    
+    def _add_prompt(self):
+        """添加新提示词"""
+        # 获取当前选中的分类
+        current = self.tree.currentItem()
+        if not current:
+            QMessageBox.warning(self, "错误", "请先选择一个分类")
+            return
+            
+        # 如果选中的是提示词，获取其父分类
+        if current.parent():
+            current = current.parent()
+            
+        dialog = QDialog(self)
+        dialog.setWindowTitle("添加提示词")
+        dialog.setMinimumWidth(300)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # 添加输入框
+        en_label = QLabel("英文:")
+        en_edit = QLineEdit()
+        zh_label = QLabel("中文:")
+        zh_edit = QLineEdit()
+        
+        layout.addWidget(en_label)
+        layout.addWidget(en_edit)
+        layout.addWidget(zh_label)
+        layout.addWidget(zh_edit)
+        
+        # 添加按钮
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | 
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            en = en_edit.text().strip()
+            zh = zh_edit.text().strip()
+            if en and zh:
+                category_name = current.text(0)
+                PROMPT_LIBRARY.add_prompt(category_name, en, zh)
+                self.tree.clear()
+                self.load_library()
+    
+    def _delete_selected(self):
+        """删除选中的项"""
+        current = self.tree.currentItem()
+        if not current:
+            return
+            
+        if current.parent():  # 删除提示词
+            category = current.parent().text(0)
+            prompt = current.text(0)
+            if QMessageBox.question(
+                self, 
+                "确认删除", 
+                f"确定要删除提示词 '{prompt}' 吗？"
+            ) == QMessageBox.StandardButton.Yes:
+                PROMPT_LIBRARY.delete_prompt(category, prompt)
+        else:  # 删除分类
+            category = current.text(0)
+            if QMessageBox.question(
+                self, 
+                "确认删除", 
+                f"确定要删除分类 '{category}' 及其所有提示词吗？"
+            ) == QMessageBox.StandardButton.Yes:
+                PROMPT_LIBRARY.delete_category(category)
+                
+        self.tree.clear()
+        self.load_library() 
