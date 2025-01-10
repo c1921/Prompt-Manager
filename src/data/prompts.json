@@ -1,0 +1,62 @@
+{
+    "quality": {
+        "name": "图像质量",
+        "description": "控制图像整体质量的提示词",
+        "prompts": [
+            {"en": "masterpiece", "zh": "杰作"},
+            {"en": "best quality", "zh": "最佳质量"},
+            {"en": "high resolution", "zh": "高分辨率"},
+            {"en": "ultra detailed", "zh": "超级细节"}
+        ]
+    },
+    "style": {
+        "name": "艺术风格",
+        "description": "不同的艺术风格",
+        "prompts": [
+            {"en": "oil painting", "zh": "油画"},
+            {"en": "watercolor", "zh": "水彩"},
+            {"en": "sketch", "zh": "素描"},
+            {"en": "anime style", "zh": "动漫风格"}
+        ]
+    },
+    "character": {
+        "name": "人物特征",
+        "description": "人物相关的特征描述",
+        "prompts": [
+            {"en": "1girl", "zh": "女性"},
+            {"en": "long hair", "zh": "长发"},
+            {"en": "blue eyes", "zh": "蓝色眼睛"},
+            {"en": "smile", "zh": "微笑"}
+        ]
+    },
+    "background": {
+        "name": "场景背景",
+        "description": "背景和环境描述",
+        "prompts": [
+            {"en": "forest", "zh": "森林"},
+            {"en": "beach", "zh": "海滩"},
+            {"en": "city", "zh": "城市"},
+            {"en": "night sky", "zh": "夜空"}
+        ]
+    },
+    "composition": {
+        "name": "构图视角",
+        "description": "构图和视角相关",
+        "prompts": [
+            {"en": "close-up", "zh": "特写"},
+            {"en": "full body", "zh": "全身"},
+            {"en": "from above", "zh": "俯视"},
+            {"en": "side view", "zh": "侧面视角"}
+        ]
+    },
+    "lighting": {
+        "name": "光照效果",
+        "description": "光照和氛围",
+        "prompts": [
+            {"en": "sunlight", "zh": "阳光"},
+            {"en": "sunset", "zh": "日落"},
+            {"en": "soft lighting", "zh": "柔和光线"},
+            {"en": "dramatic lighting", "zh": "戏剧性光效"}
+        ]
+    }
+} 

@@ -59,6 +59,8 @@ PyInstaller.__main__.run([
     '--icon=assets/icon.ico',
     '--version-file=version_info.txt',
     '--add-data=src/styles;src/styles',
+    '--add-data=src/data/prompts.json;src/data',
+    '--add-data=src/assets/icons;src/assets/icons',
     '--clean',
     '--noconfirm'
 ]) 

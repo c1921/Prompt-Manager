@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, 
-                            QPushButton, QTreeWidgetItem, QMessageBox, QStyle, QLabel)
+                            QPushButton, QTreeWidgetItem, QMessageBox, QStyle, QLabel,
+                            QDialog)
 from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor, QPalette
 from PyQt6.QtCore import Qt
 from .draggable_tree import DraggableTreeWidget
@@ -65,12 +66,14 @@ class PromptEditor(QWidget):
         button_layout = QHBoxLayout()
         self.add_button = QPushButton("生成提示词列表")
         self.translate_button = QPushButton("翻译所有提示词")
+        self.library_button = QPushButton("打开提示词库")
         
-        for btn in (self.add_button, self.translate_button):
+        for btn in (self.add_button, self.translate_button, self.library_button):
             btn.setStyleSheet(ACTION_BUTTONS)
         
         button_layout.addWidget(self.add_button)
         button_layout.addWidget(self.translate_button)
+        button_layout.addWidget(self.library_button)
         
         left_layout.addWidget(self.input_field)
         left_layout.addLayout(button_layout)
@@ -84,6 +87,7 @@ class PromptEditor(QWidget):
         self.translate_button.clicked.connect(self.translate_all_prompts)
         self.prompt_list.itemSelectionChanged.connect(self.highlight_selected_text)
         self.prompt_list.model().rowsMoved.connect(self.on_rows_moved)
+        self.library_button.clicked.connect(self.show_prompt_library)
         
         main_layout.addLayout(left_layout)
         main_layout.addWidget(self.prompt_list)
@@ -245,3 +249,34 @@ class PromptEditor(QWidget):
     def translate_all_prompts(self):
         """触发所有提示词的翻译"""
         self.prompt_list.translate_all_prompts() 
+
+    def show_prompt_library(self):
+        """显示提示词库对话框"""
+        from ..dialogs.prompt_library_dialog import PromptLibraryDialog
+        
+        # 创建对话框
+        self.prompt_library_dialog = PromptLibraryDialog(self)
+        
+        # 连接选中信号
+        self.prompt_library_dialog.promptsSelected.connect(self._handle_prompts_selected)
+        
+        # 显示对话框
+        self.prompt_library_dialog.show()
+
+    def _handle_prompts_selected(self, selected_prompts):
+        """处理提示词选中事件"""
+        if selected_prompts:
+            # 获取当前文本
+            current_text = self.input_field.toPlainText()
+            
+            # 添加选中的提示词到输入框
+            new_prompts = [prompt[0] for prompt in selected_prompts]
+            if current_text:
+                current_text += ", "
+            current_text += ", ".join(new_prompts)
+            self.input_field.setPlainText(current_text)
+            
+            # 直接添加到列表，包含中文翻译
+            for en, zh in selected_prompts:
+                item = QTreeWidgetItem([en, zh])
+                self.prompt_list.addTopLevelItem(item) 
