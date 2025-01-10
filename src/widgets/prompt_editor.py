@@ -4,6 +4,7 @@ from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor, QPalette
 from PyQt6.QtCore import Qt
 from .draggable_tree import DraggableTreeWidget
 from ..styles.dark_theme import *  # 导入样式
+from ..services.translator import TranslationService, TranslationError
 
 class PromptEditor(QWidget):
     def __init__(self):
@@ -163,27 +164,15 @@ class PromptEditor(QWidget):
         # 批量翻译中文提示词
         if chinese_prompts:
             try:
-                translator = self.prompt_list.translator
-                translator.source = 'zh-CN'
-                translator.target = 'en'
-                
-                # 只提取提示词进行翻译
-                texts_to_translate = [prompt for _, prompt in chinese_prompts]
-                
-                # 合并翻译以减少请求次数
-                combined_text = "\n".join(texts_to_translate)
-                english_translations = translator.translate(combined_text).split("\n")
-                
-                # 恢复翻译方向
-                translator.source = 'en'
-                translator.target = 'zh-CN'
-                
-                # 将翻译结果与原始索引和中文配对
-                for (idx, cn_text), en_text in zip(chinese_prompts, english_translations):
-                    other_prompts.append((idx, en_text.strip(), cn_text))
+                translation_service = TranslationService()
+                translated_prompts = translation_service.translate_prompts(
+                    chinese_prompts, 
+                    to_english=True
+                )
+                other_prompts.extend(translated_prompts)
                     
-            except Exception as e:
-                QMessageBox.warning(self, "翻译错误", f"翻译失败: {str(e)}")
+            except TranslationError as e:
+                QMessageBox.warning(self, "翻译错误", str(e))
                 # 翻译失败时使用原文
                 for idx, prompt in chinese_prompts:
                     other_prompts.append((idx, prompt, ""))

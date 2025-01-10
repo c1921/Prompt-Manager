@@ -4,6 +4,7 @@ from dialogs.prompt_translation_dialog import PromptTranslationDialog
 from deep_translator import GoogleTranslator
 import time
 from ..styles.dark_theme import TREE_WIDGET
+from ..services.translator import TranslationService, TranslationError
 
 class DraggableTreeWidget(QTreeWidget):
     def __init__(self):
@@ -34,8 +35,8 @@ class DraggableTreeWidget(QTreeWidget):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
         
-        # 添加翻译器实例
-        self.translator = GoogleTranslator(source='en', target='zh-CN')
+        # 使用翻译服务
+        self.translation_service = TranslationService()
     
     def _find_prompt_editor(self):
         """查找 PromptEditor 父窗口"""
@@ -121,40 +122,36 @@ class DraggableTreeWidget(QTreeWidget):
         """翻译单个提示词"""
         try:
             text = item.text(0)
-            translation = self.translator.translate(text)
+            translation = self.translation_service.translate_text(text)
             item.setText(1, translation)
-        except Exception as e:
-            QMessageBox.warning(self, "翻译错误", f"翻译失败: {str(e)}")
+        except TranslationError as e:
+            QMessageBox.warning(self, "翻译错误", str(e))
     
     def translate_all_prompts(self):
         """批量翻译所有提示词"""
-        # 收集所有需要翻译的提示词
+        # 收集需要翻译的提示词
         to_translate = []
         items = []
         
         for i in range(self.topLevelItemCount()):
             item = self.topLevelItem(i)
             if not item.text(1):  # 如果没有翻译
-                to_translate.append(item.text(0))
+                to_translate.append((i, item.text(0)))
                 items.append(item)
         
         if not to_translate:
             return
         
         try:
-            # 用换行符连接所有提示词
-            combined_text = "\n".join(to_translate)
-            # 批量翻译
-            combined_translation = self.translator.translate(combined_text)
-            # 分割翻译结果
-            translations = combined_translation.split("\n")
+            # 使用翻译服务进行批量翻译
+            results = self.translation_service.translate_prompts(to_translate)
             
-            # 将翻译结果分配给对应的项
-            for item, translation in zip(items, translations):
-                item.setText(1, translation.strip())
+            # 更新界面
+            for item, (_, _, translation) in zip(items, results):
+                item.setText(1, translation)
                 
-        except Exception as e:
-            QMessageBox.warning(self, "翻译错误", f"翻译失败: {str(e)}")
+        except TranslationError as e:
+            QMessageBox.warning(self, "翻译错误", str(e))
         
         # 让界面及时刷新
         QApplication.processEvents() 
