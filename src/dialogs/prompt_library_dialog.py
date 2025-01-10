@@ -4,7 +4,10 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTreeWidget,
 from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QIcon
 from ..data.prompt_library import PROMPT_LIBRARY
-from ..styles.dark_theme import *
+from ..styles.prompt_library import *
+from ..styles.dialog_style import DIALOG_BASE_STYLE
+from .category_dialog import CategoryDialog
+from .prompt_edit_dialog import PromptEditDialog
 import json
 
 class PromptLibraryDialog(QDialog):
@@ -15,6 +18,7 @@ class PromptLibraryDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("提示词库")
         self.setMinimumSize(600, 400)
+        self.setStyleSheet(DIALOG_STYLE)
         
         # 设置无边框窗口，并添加独立窗口标志
         self.setWindowFlags(
@@ -31,41 +35,19 @@ class PromptLibraryDialog(QDialog):
         # 创建标题栏
         title_bar = QWidget()
         title_bar.setFixedHeight(40)
-        title_bar.setStyleSheet("""
-            QWidget {
-                background-color: #1e1e1e;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-            }
-        """)
+        title_bar.setStyleSheet(TITLE_BAR_STYLE)
         
         title_layout = QHBoxLayout(title_bar)
         title_layout.setContentsMargins(15, 0, 10, 0)
         
         # 标题文本
         title_label = QLabel("提示词库")
-        title_label.setStyleSheet("""
-            QLabel {
-                color: #e0e0e0;
-                font-size: 14px;
-            }
-        """)
+        title_label.setStyleSheet(TITLE_LABEL_STYLE)
         
         # 关闭按钮
         close_button = QPushButton("×")
         close_button.setFixedSize(30, 30)
-        close_button.setStyleSheet("""
-            QPushButton {
-                border: none;
-                color: #e0e0e0;
-                font-size: 20px;
-                font-family: Arial;
-            }
-            QPushButton:hover {
-                background-color: #c42b1c;
-                border-radius: 4px;
-            }
-        """)
+        close_button.setStyleSheet(CLOSE_BUTTON_STYLE)
         close_button.clicked.connect(self.reject)
         
         title_layout.addWidget(title_label)
@@ -74,13 +56,7 @@ class PromptLibraryDialog(QDialog):
         
         # 创建内容容器
         content_widget = QWidget()
-        content_widget.setStyleSheet("""
-            QWidget {
-                background-color: #1e1e1e;
-                border-bottom-left-radius: 8px;
-                border-bottom-right-radius: 8px;
-            }
-        """)
+        content_widget.setStyleSheet(CONTENT_WIDGET_STYLE)
         
         # 内容布局
         content_layout = QVBoxLayout(content_widget)
@@ -99,71 +75,7 @@ class PromptLibraryDialog(QDialog):
         
         # 修改为勾选框模式
         self.tree.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
-        self.tree.setStyleSheet("""
-            QTreeWidget {
-                border: 1px solid #404040;
-                border-radius: 4px;
-                background-color: #1e1e1e;
-                alternate-background-color: #252525;
-                color: #e0e0e0;
-            }
-            QTreeWidget::item {
-                height: 28px;
-                padding: 4px;
-                border-radius: 2px;
-            }
-            QTreeWidget::item:hover {
-                background-color: #2a2a2a;
-            }
-            QTreeWidget::branch {
-                background-color: transparent;
-            }
-            QTreeWidget::branch:has-children:!has-siblings:closed,
-            QTreeWidget::branch:closed:has-children:has-siblings {
-                image: url(src/assets/icons/arrow-right.svg);
-            }
-            QTreeWidget::branch:open:has-children:!has-siblings,
-            QTreeWidget::branch:open:has-children:has-siblings {
-                image: url(src/assets/icons/arrow-down.svg);
-            }
-            QTreeWidget::indicator {
-                width: 18px;
-                height: 18px;
-                margin-right: 5px;
-                border-radius: 3px;
-            }
-            QTreeWidget::indicator:unchecked {
-                border: 2px solid #555555;
-                background: transparent;
-            }
-            QTreeWidget::indicator:unchecked:hover {
-                border-color: #666666;
-                background: #2d2d2d;
-            }
-            QTreeWidget::indicator:checked {
-                border: 2px solid #1976d2;
-                background: #1976d2;
-            }
-            QTreeWidget::indicator:checked:hover {
-                border-color: #2196f3;
-                background: #2196f3;
-            }
-            QTreeWidget::indicator:indeterminate {
-                border: 2px solid #1976d2;
-                background: transparent;
-            }
-            QTreeWidget::indicator:indeterminate:hover {
-                border-color: #2196f3;
-                background: #2d2d2d;
-            }
-            QHeaderView::section {
-                background-color: #252525;
-                color: #e0e0e0;
-                padding: 8px;
-                border: none;
-                border-right: 1px solid #404040;
-            }
-        """)
+        self.tree.setStyleSheet(TREE_WIDGET_STYLE)
         
         # 加载提示词库
         self.load_library()
@@ -177,23 +89,7 @@ class PromptLibraryDialog(QDialog):
         
         for btn in (self.add_button, self.cancel_button):
             btn.setMinimumHeight(36)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #1976d2;
-                    color: white;
-                    border: none;
-                    padding: 8px 24px;
-                    border-radius: 4px;
-                    min-width: 120px;
-                    font-size: 14px;
-                }
-                QPushButton:hover {
-                    background-color: #2196f3;
-                }
-                QPushButton:pressed {
-                    background-color: #1565c0;
-                }
-            """)
+            btn.setStyleSheet(ACTION_BUTTON_STYLE)
         
         button_layout.addStretch()
         button_layout.addWidget(self.add_button)
@@ -210,25 +106,13 @@ class PromptLibraryDialog(QDialog):
         self.add_prompt_button = QPushButton("添加提示词")
         self.delete_button = QPushButton("删除")
         
-        for btn in (self.import_button, self.export_button, 
-                   self.add_category_button, self.add_prompt_button, 
-                   self.delete_button):
+        toolbar_buttons = [self.import_button, self.export_button, 
+                           self.add_category_button, self.add_prompt_button, 
+                           self.delete_button]
+        
+        for btn in toolbar_buttons:
             btn.setMinimumHeight(32)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #333333;
-                    color: white;
-                    border: none;
-                    padding: 4px 12px;
-                    border-radius: 4px;
-                }
-                QPushButton:hover {
-                    background-color: #404040;
-                }
-                QPushButton:pressed {
-                    background-color: #2a2a2a;
-                }
-            """)
+            btn.setStyleSheet(TOOLBAR_BUTTON_STYLE)
             toolbar_layout.addWidget(btn)
         
         toolbar_layout.addStretch()
@@ -315,6 +199,28 @@ class PromptLibraryDialog(QDialog):
                     child = category.child(j)
                     child.setCheckState(0, Qt.CheckState.Unchecked) 
     
+    def _show_message(self, title: str, text: str, icon=QMessageBox.Icon.Information):
+        """显示消息框"""
+        msg = QMessageBox(self)
+        msg.setWindowTitle(title)
+        msg.setText(text)
+        msg.setIcon(icon)
+        msg.setStyleSheet(DIALOG_BASE_STYLE)
+        return msg.exec()
+
+    def _show_question(self, title: str, text: str) -> bool:
+        """显示询问对话框"""
+        msg = QMessageBox(self)
+        msg.setWindowTitle(title)
+        msg.setText(text)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setStandardButtons(
+            QMessageBox.StandardButton.Yes | 
+            QMessageBox.StandardButton.No
+        )
+        msg.setStyleSheet(DIALOG_BASE_STYLE)
+        return msg.exec() == QMessageBox.StandardButton.Yes
+
     def _import_library(self):
         """导入提示词库"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -323,14 +229,13 @@ class PromptLibraryDialog(QDialog):
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                # 合并到现有库
                 PROMPT_LIBRARY.merge_library(data)
-                # 重新加载树形控件
                 self.tree.clear()
                 self.load_library()
-                QMessageBox.information(self, "成功", "提示词库导入成功")
+                self._show_message("成功", "提示词库导入成功")
             except Exception as e:
-                QMessageBox.warning(self, "错误", f"导入失败: {str(e)}")
+                self._show_message("错误", f"导入失败: {str(e)}", 
+                                 QMessageBox.Icon.Warning)
     
     def _export_library(self):
         """导出提示词库"""
@@ -347,84 +252,21 @@ class PromptLibraryDialog(QDialog):
     
     def _add_category(self):
         """添加新分类"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("添加分类")
-        dialog.setMinimumWidth(300)
-        
-        layout = QVBoxLayout(dialog)
-        
-        # 添加输入框
-        name_label = QLabel("分类名称:")
-        name_edit = QLineEdit()
-        desc_label = QLabel("描述:")
-        desc_edit = QLineEdit()
-        
-        layout.addWidget(name_label)
-        layout.addWidget(name_edit)
-        layout.addWidget(desc_label)
-        layout.addWidget(desc_edit)
-        
-        # 添加按钮
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | 
-            QDialogButtonBox.StandardButton.Cancel
-        )
-        buttons.accepted.connect(dialog.accept)
-        buttons.rejected.connect(dialog.reject)
-        layout.addWidget(buttons)
-        
+        dialog = CategoryDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            name = name_edit.text().strip()
-            desc = desc_edit.text().strip()
-            if name:
-                PROMPT_LIBRARY.add_category(name, desc)
+            data = dialog.get_data()
+            if data['name']:
+                PROMPT_LIBRARY.add_category(data['name'], data['description'])
                 self.tree.clear()
                 self.load_library()
     
     def _add_prompt(self):
         """添加新提示词"""
-        # 获取当前选中的分类
-        current = self.tree.currentItem()
-        if not current:
-            QMessageBox.warning(self, "错误", "请先选择一个分类")
-            return
-            
-        # 如果选中的是提示词，获取其父分类
-        if current.parent():
-            current = current.parent()
-            
-        dialog = QDialog(self)
-        dialog.setWindowTitle("添加提示词")
-        dialog.setMinimumWidth(300)
-        
-        layout = QVBoxLayout(dialog)
-        
-        # 添加输入框
-        en_label = QLabel("英文:")
-        en_edit = QLineEdit()
-        zh_label = QLabel("中文:")
-        zh_edit = QLineEdit()
-        
-        layout.addWidget(en_label)
-        layout.addWidget(en_edit)
-        layout.addWidget(zh_label)
-        layout.addWidget(zh_edit)
-        
-        # 添加按钮
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | 
-            QDialogButtonBox.StandardButton.Cancel
-        )
-        buttons.accepted.connect(dialog.accept)
-        buttons.rejected.connect(dialog.reject)
-        layout.addWidget(buttons)
-        
+        dialog = PromptEditDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            en = en_edit.text().strip()
-            zh = zh_edit.text().strip()
-            if en and zh:
-                category_name = current.text(0)
-                PROMPT_LIBRARY.add_prompt(category_name, en, zh)
+            data = dialog.get_data()
+            if data['en'] and data['zh']:
+                PROMPT_LIBRARY.add_prompt(data['category'], data['en'], data['zh'])
                 self.tree.clear()
                 self.load_library()
     
@@ -437,19 +279,13 @@ class PromptLibraryDialog(QDialog):
         if current.parent():  # 删除提示词
             category = current.parent().text(0)
             prompt = current.text(0)
-            if QMessageBox.question(
-                self, 
-                "确认删除", 
-                f"确定要删除提示词 '{prompt}' 吗？"
-            ) == QMessageBox.StandardButton.Yes:
+            if self._show_question("确认删除", 
+                                 f"确定要删除提示词 '{prompt}' 吗？"):
                 PROMPT_LIBRARY.delete_prompt(category, prompt)
         else:  # 删除分类
             category = current.text(0)
-            if QMessageBox.question(
-                self, 
-                "确认删除", 
-                f"确定要删除分类 '{category}' 及其所有提示词吗？"
-            ) == QMessageBox.StandardButton.Yes:
+            if self._show_question("确认删除", 
+                                 f"确定要删除分类 '{category}' 及其所有提示词吗？"):
                 PROMPT_LIBRARY.delete_category(category)
                 
         self.tree.clear()
