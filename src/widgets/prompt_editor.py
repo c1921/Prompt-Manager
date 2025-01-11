@@ -186,7 +186,7 @@ class PromptEditor(QWidget):
         
         # 添加所有提示词到列表，现在已经按原始顺序排序
         for _, prompt, translation in sorted_prompts:
-            item = QTreeWidgetItem([prompt, translation])
+            item = QTreeWidgetItem([prompt, translation, "1"])  # 添加默认权重
             self.prompt_list.addTopLevelItem(item)
         
         # 更新输入框内容为规范化的英文提示词
@@ -197,7 +197,12 @@ class PromptEditor(QWidget):
         prompts = []
         for i in range(self.prompt_list.topLevelItemCount()):
             item = self.prompt_list.topLevelItem(i)
-            prompts.append(item.text(0))  # 只使用英文提示词
+            prompt = item.text(0)
+            weight = item.text(2)
+            # 修改格式化方式
+            if weight and weight != "1":
+                prompt = f"({prompt}:{weight})"
+            prompts.append(prompt)
         self.input_field.setPlainText(', '.join(prompts))
 
     def highlight_selected_text(self):
@@ -276,7 +281,7 @@ class PromptEditor(QWidget):
             current_text += ", ".join(new_prompts)
             self.input_field.setPlainText(current_text)
             
-            # 直接添加到列表，包含中文翻译
+            # 直接添加到列表，包含中文翻译和默认权重
             for en, zh in selected_prompts:
-                item = QTreeWidgetItem([en, zh])
+                item = QTreeWidgetItem([en, zh, "1"])  # 添加默认权重
                 self.prompt_list.addTopLevelItem(item) 

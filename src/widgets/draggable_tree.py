@@ -15,8 +15,11 @@ class DraggableTreeWidget(QTreeWidget):
         self.setStyleSheet(TREE_WIDGET)
         
         # 设置列头
-        self.setHeaderLabels(["提示词", "中文翻译"])
-        self.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.setHeaderLabels(["提示词", "中文翻译", "权重"])
+        self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.header().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        self.setColumnWidth(2, 60)
         
         # 启用交替行颜色
         self.setAlternatingRowColors(True)
@@ -89,12 +92,14 @@ class DraggableTreeWidget(QTreeWidget):
         dialog = PromptTranslationDialog(
             prompt=item.text(0),
             translation=item.text(1),
+            weight=item.text(2) or "1",
             parent=self
         )
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             item.setText(0, dialog.prompt_edit.text())
             item.setText(1, dialog.translation_edit.text())
+            item.setText(2, dialog.weight_edit.text())
             prompt_editor = self._find_prompt_editor()
             if prompt_editor:
                 prompt_editor.update_input_field()
