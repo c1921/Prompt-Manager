@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QTreeWidget, QHeaderView, QMenu, QDialog, QMessageBox, QApplication
 from PyQt6.QtCore import Qt
-from dialogs.prompt_translation_dialog import PromptTranslationDialog
+from ..dialogs.prompt_translation_dialog import PromptTranslationDialog
 from deep_translator import GoogleTranslator
 import time
 from ..styles.dark_theme import TREE_WIDGET
