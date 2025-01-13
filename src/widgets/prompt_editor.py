@@ -197,6 +197,9 @@ class PromptEditor(QWidget):
         prompts = []
         for i in range(self.prompt_list.topLevelItemCount()):
             item = self.prompt_list.topLevelItem(i)
+            # 检查是否禁用
+            if item.data(0, Qt.ItemDataRole.UserRole):
+                continue
             prompt = item.text(0)
             weight = item.text(2)
             # 修改格式化方式
