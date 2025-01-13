@@ -17,13 +17,18 @@ class PromptCategory:
 class PromptLibrary:
     def __init__(self):
         self.categories: Dict[str, PromptCategory] = {}
+        self.library_path = os.path.join(os.path.dirname(__file__), 'prompts.json')
+        self.load_library()
+    
+    def set_library_path(self, path: str):
+        """设置提示词库路径"""
+        self.library_path = path
         self.load_library()
     
     def load_library(self):
         """从 JSON 文件加载提示词库"""
-        json_path = os.path.join(os.path.dirname(__file__), 'prompts.json')
         try:
-            with open(json_path, 'r', encoding='utf-8') as f:
+            with open(self.library_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 
             for key, cat_data in data.items():
@@ -94,9 +99,10 @@ class PromptLibrary:
     
     def save_library(self):
         """保存提示词库到文件"""
-        json_path = os.path.join(os.path.dirname(__file__), 'prompts.json')
         try:
-            with open(json_path, 'w', encoding='utf-8') as f:
+            # 确保目标目录存在
+            os.makedirs(os.path.dirname(self.library_path), exist_ok=True)
+            with open(self.library_path, 'w', encoding='utf-8') as f:
                 json.dump(self.export_library(), f, 
                          ensure_ascii=False, indent=4)
         except Exception as e:

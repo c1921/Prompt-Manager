@@ -50,9 +50,26 @@ class PromptLibraryDialog(QDialog):
         close_button.setStyleSheet(CLOSE_BUTTON_STYLE)
         close_button.clicked.connect(self.reject)
         
+        # 添加设置按钮到标题栏
+        settings_button = QPushButton("⚙")
+        settings_button.setFixedSize(30, 30)
+        settings_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                color: #e0e0e0;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background-color: #404040;
+                border-radius: 4px;
+            }
+        """)
+        settings_button.clicked.connect(self._show_settings)
+        
         title_layout.addWidget(title_label)
         title_layout.addStretch()
         title_layout.addWidget(close_button)
+        title_layout.insertWidget(title_layout.count()-1, settings_button)
         
         # 创建内容容器
         content_widget = QWidget()
@@ -290,3 +307,15 @@ class PromptLibraryDialog(QDialog):
                 
         self.tree.clear()
         self.load_library() 
+    
+    def _show_settings(self):
+        """显示设置对话框"""
+        from .settings_dialog import SettingsDialog
+        
+        dialog = SettingsDialog(PROMPT_LIBRARY.library_path, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            new_path = dialog.get_library_path()
+            if new_path != PROMPT_LIBRARY.library_path:
+                PROMPT_LIBRARY.set_library_path(new_path)
+                self.tree.clear()
+                self.load_library() 
