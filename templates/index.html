@@ -1,88 +1,123 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SD Prompt Manager</title>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .network-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #ccc;
-        }
-        
-        .status-indicator.available {
-            background-color: #4CAF50;
-        }
-        
-        .status-indicator.unavailable {
-            background-color: #f44336;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
-<body>
-    <div class="network-status">
-        <div class="status-indicator"></div>
-        <span class="status-text">检查翻译服务...</span>
+<body class="d-flex flex-column min-vh-100">
+    <!-- 顶部栏 -->
+    <div class="bg-body-tertiary border-bottom">
+        <div class="container-fluid">
+            <div class="row py-2">
+                <div class="col">
+                    <button class="btn btn-primary border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-    <h1>SD Prompt Manager</h1>
-    <form class="prompt-form" method="POST" onsubmit="updatePromptInput()">
-        <textarea 
-            class="prompt-input" 
-            name="prompt" 
-            placeholder="请输入您的提示词..."
-            oninput="splitIntoBlocks(this.value)"
-        >{{ prompt if prompt else '' }}</textarea>
-        <button type="button" class="translate-all-button" onclick="translateAllPrompts()">整体翻译</button>
-        <div class="prompt-blocks" id="blockContainer"></div>
-    </form>
 
+    <!-- 侧边栏 -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title">设置</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="mb-3">
+                <label class="form-label">主题</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="theme" id="lightTheme" checked>
+                    <label class="form-check-label" for="lightTheme">浅色</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="theme" id="darkTheme">
+                    <label class="form-check-label" for="darkTheme">深色</label>
+                </div>
+            </div>
+            <hr>
+            <div class="mb-3">
+                <label class="form-label">使用说明</label>
+                <ul class="list-unstyled">
+                    <li>• 输入提示词，用英文逗号分隔</li>
+                    <li>• 双击提示词块可以编辑翻译</li>
+                    <li>• 拖拽提示词块可以调整顺序</li>
+                    <li>• 按T键可以快速翻译当前选中的提示词</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="container my-4 flex-grow-1">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form class="prompt-form">
+                            <div class="mb-3">
+                                <label for="promptInput" class="form-label">提示词输入</label>
+                                <textarea 
+                                    id="promptInput"
+                                    class="form-control prompt-input" 
+                                    name="prompt" 
+                                    placeholder="请输入您的提示词，用英文逗号分隔..."
+                                    oninput="splitIntoBlocks(this.value)"
+                                >{{ prompt if prompt else '' }}</textarea>
+                            </div>
+                            
+                            <div class="d-flex gap-2 mb-3">
+                                <button type="button" class="btn btn-primary" onclick="translateAllPrompts()">
+                                    整体翻译
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearAll()">
+                                    清空
+                                </button>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-body prompt-blocks" id="blockContainer">
+                                    <!-- 提示词块将在这里动态生成 -->
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer py-3 bg-body-tertiary mt-auto border-top">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-body-secondary">SD Prompt Manager v{{ version }}</span>
+                <div class="network-status">
+                    <div class="status-indicator"></div>
+                    <span class="status-text">检查翻译服务...</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 错误提示 Toast -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="translation-error" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <!-- 错误消息将在这里显示 -->
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/prompt-manager.js') }}"></script>
-    <script>
-        // 定期检查网络状态
-        function checkNetworkStatus() {
-            fetch('/check-network')
-                .then(response => response.json())
-                .then(data => {
-                    const indicator = document.querySelector('.status-indicator');
-                    const statusText = document.querySelector('.status-text');
-                    
-                    if (data.status === 'available') {
-                        indicator.className = 'status-indicator available';
-                        statusText.textContent = '翻译服务可用';
-                    } else {
-                        indicator.className = 'status-indicator unavailable';
-                        statusText.textContent = '翻译服务不可用';
-                    }
-                })
-                .catch(() => {
-                    const indicator = document.querySelector('.status-indicator');
-                    const statusText = document.querySelector('.status-text');
-                    indicator.className = 'status-indicator unavailable';
-                    statusText.textContent = '检查失败';
-                });
-        }
-
-        // 页面加载时检查
-        checkNetworkStatus();
-        // 每30秒检查一次
-        setInterval(checkNetworkStatus, 30000);
-    </script>
 </body>
 </html> 

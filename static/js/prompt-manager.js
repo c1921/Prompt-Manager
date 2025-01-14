@@ -150,7 +150,7 @@ async function splitIntoBlocks(text) {
 
     blocks.forEach(block => {
         const blockElement = document.createElement('div');
-        blockElement.className = 'prompt-block';
+        blockElement.className = 'badge text-bg-secondary prompt-block';
 
         const textSpan = document.createElement('div');
         textSpan.className = 'prompt-text';
@@ -211,6 +211,11 @@ window.onload = function() {
     if (textarea.value) {
         splitIntoBlocks(textarea.value);
     }
+    
+    // 初始检查
+    checkNetworkStatus();
+    // 每30秒检查一次
+    setInterval(checkNetworkStatus, 30000);
 };
 
 async function translateAllPrompts() {
@@ -261,19 +266,39 @@ async function translateAllPrompts() {
 
 // 添加错误提示函数
 function showTranslationError(message) {
-    // 创建或获取错误提示元素
-    let errorDiv = document.getElementById('translation-error');
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.id = 'translation-error';
-        document.querySelector('.prompt-form').appendChild(errorDiv);
+    const toastEl = document.getElementById('translation-error');
+    const toast = new bootstrap.Toast(toastEl);
+    toastEl.querySelector('.toast-body').textContent = message;
+    toast.show();
+}
+
+// 添加清空功能
+function clearAll() {
+    const textarea = document.querySelector('.prompt-input');
+    textarea.value = '';
+    splitIntoBlocks('');
+}
+
+// 添加网络状态检查函数
+async function checkNetworkStatus() {
+    try {
+        const response = await fetch('/check-network');
+        const data = await response.json();
+        
+        const indicator = document.querySelector('.status-indicator');
+        const statusText = document.querySelector('.status-text');
+        
+        if (data.status === 'available') {
+            indicator.className = 'status-indicator available';
+            statusText.textContent = '翻译服务可用';
+        } else {
+            indicator.className = 'status-indicator unavailable';
+            statusText.textContent = '翻译服务不可用';
+        }
+    } catch (error) {
+        const indicator = document.querySelector('.status-indicator');
+        const statusText = document.querySelector('.status-text');
+        indicator.className = 'status-indicator unavailable';
+        statusText.textContent = '检查失败';
     }
-    
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-    
-    // 3秒后自动隐藏
-    setTimeout(() => {
-        errorDiv.style.display = 'none';
-    }, 3000);
 }

@@ -7,6 +7,7 @@ import requests
 import time
 import threading
 from werkzeug.serving import make_server
+from src.version import VERSION_STR  # 添加这行导入
 
 class FlaskThread(threading.Thread):
     def __init__(self, app):
@@ -52,7 +53,9 @@ def create_app(config_name='default'):
 
     @app.route('/')
     def index():
-        return render_template('index.html')
+        return render_template('index.html', 
+                             prompt=app.config['DEFAULT_PROMPT'],
+                             version=VERSION_STR)
 
     @app.route('/check-network', methods=['GET'])
     def check_network():
@@ -88,26 +91,37 @@ def main():
     env = os.getenv('FLASK_ENV', 'development')
     app = create_app(env)
     
-    # 在后台线程中运行 Flask
-    flask_thread = FlaskThread(app)
-    flask_thread.daemon = True
-    flask_thread.start()
+    # 根据环境变量决定是否使用 webview
+    use_webview = os.getenv('USE_WEBVIEW', 'false').lower() == 'true'
     
-    # 获取随机分配的端口
-    port = flask_thread.get_port()
-    
-    # 创建窗口
-    webview.create_window(
-        'SD Prompt Manager',
-        f'http://127.0.0.1:{port}',
-        width=1000,
-        height=800,
-        resizable=True,
-        min_size=(800, 600)
-    )
-    
-    # 启动 webview
-    webview.start(debug=False)
+    if use_webview:
+        # 在后台线程中运行 Flask
+        flask_thread = FlaskThread(app)
+        flask_thread.daemon = True
+        flask_thread.start()
+        
+        # 获取随机分配的端口
+        port = flask_thread.get_port()
+        
+        # 创建窗口
+        webview.create_window(
+            'SD Prompt Manager',
+            f'http://127.0.0.1:{port}',
+            width=1000,
+            height=800,
+            resizable=True,
+            min_size=(800, 600),
+            background_color='#1a1a1a',  # 深色背景
+            text_select=True,            # 允许文本选择
+            frameless=False,             # 使用系统默认边框
+            easy_drag=True               # 允许拖动
+        )
+        
+        # 启动 webview
+        webview.start()
+    else:
+        # 开发模式：直接运行 Flask
+        app.run(debug=app.config['DEBUG'])
 
 if __name__ == '__main__':
     main() 

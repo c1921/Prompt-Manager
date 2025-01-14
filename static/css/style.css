@@ -1,91 +1,58 @@
-body {
-    font-family: Arial, sans-serif;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.prompt-form {
-    margin-top: 20px;
-}
-
-.prompt-input {
-    width: 100%;
-    height: 150px;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    resize: vertical;
-}
-
-.submit-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.submit-button:hover {
-    background-color: #45a049;
-}
-
+/* 提示词块容器样式 */
 .prompt-blocks {
-    margin: 20px 0;
-    min-height: 50px;
-    border: 1px dashed #ccc;
-    padding: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    min-height: 50px;          /* 最小高度确保空容器也有大小 */
+    padding: 10px;             /* 内边距 */
+    display: flex;             /* 弹性布局 */
+    flex-wrap: wrap;           /* 允许换行 */
+    gap: 8px;                  /* 块之间的间距 */
 }
 
+/* 单个提示词块样式 */
 .prompt-block {
-    position: relative;
-    padding: 8px 12px;
-    background: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    cursor: move;
-    transition: background-color 0.2s;
+    position: relative;        /* 用于定位翻译输入框 */
+    cursor: move;             /* 鼠标显示为可移动 */
+    transition: background-color 0.2s;  /* 背景色过渡动画 */
+    font-size: 1rem !important;        /* 覆盖 Bootstrap 默认字体大小 */
+    padding: 0.5rem 1rem !important;   /* 覆盖 Bootstrap 默认内边距 */
 }
 
 .prompt-block:hover {
-    background: #e8e8e8;
+    opacity: 0.8;
 }
 
+/* 拖拽相关样式 */
 .sortable-ghost {
-    opacity: 0.4;
-    background: #c8ebfb;
+    opacity: 0.4;             /* 拖动时的透明度 */
+    background: #cfe2ff;      /* 拖动时的背景色 */
 }
 
 .sortable-chosen {
-    background: #e0e0e0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: #e9ecef;      /* 选中时的背景色 */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);  /* 选中时的阴影 */
 }
 
+/* 翻译文本样式 */
 .translation {
-    font-size: 0.8em;
-    color: #666;
-    margin-top: 4px;
-    font-style: italic;
+    font-size: 0.875em;       /* 小一号的字体 */
+    color: rgba(255, 255, 255, 0.8);  /* 半透明白色（适配深色主题） */
+    margin-top: 4px;          /* 与原文的间距 */
+    font-style: italic;       /* 斜体 */
     padding: 2px 0;
 }
 
+/* 翻译编辑框样式 */
 .edit-translation {
-    position: absolute;
-    top: 100%;
+    position: absolute;        /* 绝对定位 */
+    top: 100%;                /* 显示在块的下方 */
     left: 0;
     width: 200px;
     padding: 5px;
     background: white;
-    border: 1px solid #ddd;
+    border: 1px solid #dee2e6;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    z-index: 1000;
-    display: none;
+    z-index: 1000;            /* 确保显示在最上层 */
+    display: none;            /* 默认隐藏 */
     margin-top: 5px;
     cursor: text;
 }
@@ -93,58 +60,56 @@ body {
 .edit-translation input {
     width: 100%;
     padding: 5px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
     font-size: 14px;
     cursor: text;
-    -webkit-user-modify: read-write-plaintext-only;
+    background: white;
+    color: #212529;
 }
 
 .edit-translation input:focus {
     outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-.prompt-block.editing {
-    z-index: 100;
+/* 翻译服务状态指示器样式 */
+.network-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.prompt-block.editing .edit-translation {
-    display: block;
+/* 状态指示灯样式 */
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;       /* 圆形指示灯 */
+    background-color: #dee2e6; /* 默认颜色 */
 }
 
-.prompt-block .prompt-text {
-    margin-bottom: 2px;
+.status-indicator.available {
+    background-color: #198754; /* 绿色表示可用 */
 }
 
-.translate-all-button {
-    background-color: #2196F3;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-bottom: 10px;
-    transition: background-color 0.2s;
+.status-indicator.unavailable {
+    background-color: #dc3545; /* 红色表示不可用 */
 }
 
-.translate-all-button:hover {
-    background-color: #1976D2;
-}
-
+/* 错误提示样式 */
 #translation-error {
-    position: fixed;
+    position: fixed;          /* 固定在右上角 */
     top: 20px;
     right: 20px;
-    background-color: #ff5252;
+    background-color: #dc3545;
     color: white;
     padding: 10px 20px;
     border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    display: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: none;            /* 默认隐藏 */
     z-index: 1000;
-    animation: fadeIn 0.3s ease-in-out;
+    animation: fadeIn 0.3s ease-in-out;  /* 淡入动画 */
 }
 
 @keyframes fadeIn {

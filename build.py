@@ -25,40 +25,9 @@ def terminate_process(exe_name):
         except (psutil.NoSuchProcess, psutil.TimeoutExpired):
             pass
 
-def generate_version_info():
-    """生成版本信息文件"""
-    print(f"当前版本号: {VERSION_STR}")
-    
-    try:
-        # 读取模板文件
-        with open('version_info.template', 'r', encoding='utf-8') as f:
-            template = Template(f.read())
-        
-        # 准备替换变量
-        version_tuple = VERSION + (0,)  # 添加一个0作为第四个版本号
-        variables = {
-            'VERSION_TUPLE': str(version_tuple),
-            'VERSION_STR': VERSION_STR,
-            'APP_NAME': APP_NAME,
-            'COMPANY': COMPANY,
-            'DESCRIPTION': DESCRIPTION,
-            'COPYRIGHT': COPYRIGHT
-        }
-        
-        # 替换变量生成最终内容
-        version_info = template.substitute(variables)
-        
-        # 写入文件
-        with open('version_info.txt', 'w', encoding='utf-8') as f:
-            f.write(version_info)
-            
-    except Exception as e:
-        print(f"生成版本信息时出错: {str(e)}")
-        raise
-
 def clean_dist():
     """清理之前的构建文件"""
-    output_name = "SD Prompt Manager"
+    output_name = f"SD_Prompt_Manager_v{VERSION_STR}"
     exe_path = f'dist/{output_name}.exe'
     
     if os.path.exists(exe_path) and is_file_locked(exe_path):
@@ -76,6 +45,8 @@ def clean_dist():
             shutil.rmtree('build')
         if os.path.exists('version_info.txt'):
             os.remove('version_info.txt')
+        if os.path.exists('runtime_hook.py'):
+            os.remove('runtime_hook.py')
         if os.path.exists(f'{output_name}.spec'):
             os.remove(f'{output_name}.spec')
     except Exception as e:
@@ -83,25 +54,42 @@ def clean_dist():
         print("请手动关闭应用后重试")
         exit(1)
 
-def build_app():
-    """构建应用"""
-    output_name = "SD Prompt Manager"
-    PyInstaller.__main__.run([
-        'app.py',
-        f'--name={output_name}',
-        '--onefile',
-        '--windowed',
-        '--add-data=templates;templates',
-        '--add-data=static;static',
-        '--add-data=config;config',
-        '--add-data=services;services',
-        '--hidden-import=config',
-        '--hidden-import=services',
-        '--hidden-import=webview',
-        '--version-file=version_info.txt',
-        '--clean',
-        '--noconfirm',
-    ])
+def generate_version_info():
+    """生成版本信息文件"""
+    print(f"当前版本号: {VERSION_STR}")
+    
+    try:
+        with open('version_info.template', 'r', encoding='utf-8') as f:
+            template = Template(f.read())
+        
+        version_tuple = VERSION + (0,)
+        variables = {
+            'VERSION_TUPLE': str(version_tuple),
+            'VERSION_STR': VERSION_STR,
+            'APP_NAME': APP_NAME,
+            'COMPANY': COMPANY,
+            'DESCRIPTION': DESCRIPTION,
+            'COPYRIGHT': COPYRIGHT
+        }
+        
+        version_info = template.substitute(variables)
+        
+        with open('version_info.txt', 'w', encoding='utf-8') as f:
+            f.write(version_info)
+            
+    except Exception as e:
+        print(f"生成版本信息时出错: {str(e)}")
+        raise
+
+def create_runtime_hook():
+    """创建运行时环境变量设置脚本"""
+    runtime_hook = """
+import os
+os.environ['USE_WEBVIEW'] = 'true'
+os.environ['FLASK_ENV'] = 'production'
+"""
+    with open('runtime_hook.py', 'w', encoding='utf-8') as f:
+        f.write(runtime_hook)
 
 def main():
     """主函数"""
@@ -122,22 +110,41 @@ def main():
         print(f"生成版本信息失败: {e}")
         return
     
-    if not os.path.exists('version_info.txt'):
-        print("错误：version_info.txt 文件未生成")
-        return
-        
+    # 创建运行时钩子
+    print("创建运行时钩子...")
+    create_runtime_hook()
+    
     # 构建应用
     print("正在构建应用...")
+    output_name = f"SD_Prompt_Manager_v{VERSION_STR}"
     try:
-        build_app()
+        PyInstaller.__main__.run([
+            'app.py',
+            f'--name={output_name}',
+            '--onefile',
+            '--windowed',
+            '--version-file=version_info.txt',
+            '--runtime-hook=runtime_hook.py',
+            '--add-data=templates;templates',
+            '--add-data=static;static',
+            '--add-data=config;config',
+            '--add-data=services;services',
+            '--hidden-import=config',
+            '--hidden-import=services',
+            '--hidden-import=webview',
+            '--clean',
+            '--noconfirm'
+        ])
         print("构建完成！")
-        print(f'可执行文件位置: dist/SD Prompt Manager.exe')  # 修改为实际的文件名
+        print(f"可执行文件位置: dist/{output_name}.exe")
     except Exception as e:
         print(f"构建失败: {e}")
     finally:
         # 清理临时文件
         if os.path.exists('version_info.txt'):
             os.remove('version_info.txt')
+        if os.path.exists('runtime_hook.py'):
+            os.remove('runtime_hook.py')
 
 if __name__ == '__main__':
     main() 
