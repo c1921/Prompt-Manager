@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD Prompt Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .prompt-form {
+            margin-top: 20px;
+        }
+        .prompt-input {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .submit-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .submit-button:hover {
+            background-color: #45a049;
+        }
+        .prompt-blocks {
+            margin: 20px 0;
+            min-height: 50px;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .prompt-block {
+            padding: 5px 10px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: move;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .prompt-block:hover {
+            background: #e8e8e8;
+        }
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #c8ebfb;
+        }
+        .sortable-chosen {
+            background: #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>SD Prompt Manager</h1>
+    <form class="prompt-form" method="POST" onsubmit="updatePromptInput()">
+        <textarea 
+            class="prompt-input" 
+            name="prompt" 
+            placeholder="请输入您的提示词..."
+            oninput="splitIntoBlocks(this.value)"
+        >{{ prompt if prompt else '' }}</textarea>
+        <div class="prompt-blocks" id="blockContainer"></div>
+    </form>
+
+    <script>
+        let sortable = null;
+
+        function initSortable() {
+            if (sortable) {
+                sortable.destroy();
+            }
+            sortable = new Sortable(blockContainer, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function() {
+                    updatePromptInput();
+                }
+            });
+        }
+
+        function splitIntoBlocks(text) {
+            const container = document.getElementById('blockContainer');
+            container.innerHTML = '';
+            
+            if (!text.trim()) return;
+            
+            const blocks = text.split(',')
+                .map(block => block.trim())
+                .filter(block => block);
+            
+            blocks.forEach(block => {
+                const blockElement = document.createElement('div');
+                blockElement.className = 'prompt-block';
+                blockElement.textContent = block;
+                container.appendChild(blockElement);
+            });
+
+            initSortable();
+        }
+
+        function updatePromptInput() {
+            const blocks = Array.from(document.querySelectorAll('.prompt-block'));
+            const text = blocks.map(block => block.textContent).join(', ');
+            document.querySelector('.prompt-input').value = text;
+        }
+
+        // 初始化时分割现有文本
+        window.onload = function() {
+            const textarea = document.querySelector('.prompt-input');
+            if (textarea.value) {
+                splitIntoBlocks(textarea.value);
+            }
+        };
+    </script>
+</body>
+</html> 
