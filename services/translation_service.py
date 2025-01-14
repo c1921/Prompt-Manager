@@ -1,13 +1,15 @@
 from deep_translator import GoogleTranslator
 from typing import List, Tuple, Optional
 import time
+from config.config import config
 
 class TranslationService:
-    def __init__(self):
+    def __init__(self, config_name='default'):
         self.en_to_zh = GoogleTranslator(source='en', target='zh-CN')
         self.zh_to_en = GoogleTranslator(source='zh-CN', target='en')
         self.last_request_time = 0
-        self.min_interval = 1.0  # 最小请求间隔（秒）
+        self.config = config[config_name]
+        self.min_interval = self.config.TRANSLATION_MIN_INTERVAL
     
     def _check_rate_limit(self):
         """检查是否可以发送新的请求"""
@@ -22,7 +24,7 @@ class TranslationService:
     def translate_text(self, text: str, to_english: bool = False) -> str:
         """翻译单个文本"""
         try:
-            self._check_rate_limit()  # 检查请求限制
+            self._check_rate_limit()
             translator = self.zh_to_en if to_english else self.en_to_zh
             return translator.translate(text)
         except TranslationError as e:
