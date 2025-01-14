@@ -16,6 +16,7 @@
             placeholder="请输入您的提示词..."
             oninput="splitIntoBlocks(this.value)"
         >{{ prompt if prompt else '' }}</textarea>
+        <button type="button" class="translate-all-button" onclick="translateAllPrompts()">整体翻译</button>
         <div class="prompt-blocks" id="blockContainer"></div>
     </form>
 
