@@ -19,57 +19,6 @@
         <div class="prompt-blocks" id="blockContainer"></div>
     </form>
 
-    <script>
-        let sortable = null;
-
-        function initSortable() {
-            if (sortable) {
-                sortable.destroy();
-            }
-            sortable = new Sortable(blockContainer, {
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                dragClass: 'sortable-drag',
-                onEnd: function() {
-                    updatePromptInput();
-                }
-            });
-        }
-
-        function splitIntoBlocks(text) {
-            const container = document.getElementById('blockContainer');
-            container.innerHTML = '';
-            
-            if (!text.trim()) return;
-            
-            const blocks = text.split(',')
-                .map(block => block.trim())
-                .filter(block => block);
-            
-            blocks.forEach(block => {
-                const blockElement = document.createElement('div');
-                blockElement.className = 'prompt-block';
-                blockElement.textContent = block;
-                container.appendChild(blockElement);
-            });
-
-            initSortable();
-        }
-
-        function updatePromptInput() {
-            const blocks = Array.from(document.querySelectorAll('.prompt-block'));
-            const text = blocks.map(block => block.textContent).join(', ');
-            document.querySelector('.prompt-input').value = text;
-        }
-
-        // 初始化时分割现有文本
-        window.onload = function() {
-            const textarea = document.querySelector('.prompt-input');
-            if (textarea.value) {
-                splitIntoBlocks(textarea.value);
-            }
-        };
-    </script>
+    <script src="{{ url_for('static', filename='js/prompt-manager.js') }}"></script>
 </body>
 </html> 
