@@ -1,9 +1,25 @@
 from flask import Flask, render_template, request, jsonify
 from services.translation_service import TranslationService, TranslationError
 from config.config import config
+import webview
 import os
 import requests
 import time
+import threading
+from werkzeug.serving import make_server
+
+class FlaskThread(threading.Thread):
+    def __init__(self, app):
+        threading.Thread.__init__(self)
+        self.server = make_server('127.0.0.1', 0, app)  # 使用随机端口
+        self.ctx = app.app_context()
+        self.ctx.push()
+
+    def run(self):
+        self.server.serve_forever()
+
+    def get_port(self):
+        return self.server.server_port
 
 def create_app(config_name='default'):
     app = Flask(__name__)
@@ -34,11 +50,8 @@ def create_app(config_name='default'):
         network_status['last_check'] = current_time
         return network_status['is_available']
 
-    @app.route('/', methods=['GET', 'POST'])
+    @app.route('/')
     def index():
-        if request.method == 'POST':
-            prompt = request.form.get('prompt', '')
-            return render_template('index.html', prompt=prompt)
         return render_template('index.html')
 
     @app.route('/check-network', methods=['GET'])
@@ -71,7 +84,30 @@ def create_app(config_name='default'):
 
     return app
 
-if __name__ == '__main__':
+def main():
     env = os.getenv('FLASK_ENV', 'development')
     app = create_app(env)
-    app.run(debug=app.config['DEBUG']) 
+    
+    # 在后台线程中运行 Flask
+    flask_thread = FlaskThread(app)
+    flask_thread.daemon = True
+    flask_thread.start()
+    
+    # 获取随机分配的端口
+    port = flask_thread.get_port()
+    
+    # 创建窗口
+    webview.create_window(
+        'SD Prompt Manager',
+        f'http://127.0.0.1:{port}',
+        width=1000,
+        height=800,
+        resizable=True,
+        min_size=(800, 600)
+    )
+    
+    # 启动 webview
+    webview.start(debug=False)
+
+if __name__ == '__main__':
+    main() 

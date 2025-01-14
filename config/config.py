@@ -4,6 +4,7 @@ class Config:
     TRANSLATION_MIN_INTERVAL = 1.0  # 翻译请求最小间隔（秒）
     NETWORK_CHECK_INTERVAL = 30.0   # 网络检测间隔（秒）
     GOOGLE_TEST_URL = "https://translate.google.com"
+    WEBVIEW_DEBUG = False
 
 class DevelopmentConfig(Config):
     """开发环境配置"""
