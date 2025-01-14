@@ -11,7 +11,7 @@ class PromptEditor(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SD Prompt Manager")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1000, 600)
         
         # 设置窗口样式
         self.setStyleSheet(MAIN_WINDOW)

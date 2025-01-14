@@ -1,6 +1,7 @@
 # 版本信息
-VERSION = (0, 4, 0)  # 主版本号, 次版本号, 修订号
+VERSION = (0, 5, 0)  # 主版本号, 次版本号, 修订号
 VERSION_STR = '.'.join(map(str, VERSION))
+VERSION_STR = f"{'.'.join(map(str, VERSION))}-alpha"  # 自动生成版本号字符串
 VERSION_WITH_META = VERSION_STR
 
 # 应用信息
